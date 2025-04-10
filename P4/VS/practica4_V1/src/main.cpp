@@ -1,7 +1,7 @@
 #include <Arduino.h>
 
-#include <FreeRTOS.h>
-#include <task.h>
+//#include <FreeRTOS.h>
+//#include <task.h>
 
 #include <WiFi.h>
 #include <AsyncTCP.h>
@@ -11,10 +11,20 @@
 #include <time.h>
 #include <ESP32Servo.h>
 
-#define blinkPin 43
+#include "miPuenteH.hpp"
+puenteH myMotors = {10, 9, 11, 12};
+
+bool stateMotors = false;
+unsigned long timeMotorsStart = 0, timeMotorsOn = 0;
+int comandoAux;
+int timeON[4] = {500, 50, 25, 25};//Timpo de uso en las 4 direcciones, Milisegundos
+//adelante, atras, derecha, izquierda
+
+#define blinkPin 2
 
 bool heartbeatRecived = false;
 unsigned long startTime, lastTime = 0, myTime = 1000;
+
 // Configura tus credenciales de WiFi
 /*
 char ssid[100]     = "GWN571D04";
@@ -27,23 +37,128 @@ char password[100] = "PruebaESP32";
 char ssid[100]     = "A2501";
 char password[100] = "A_2501//";
 
+Servo miservo;
 
 //Configuracion del servidor y websocket
-AsyncServer server(80);
+AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
-
+//Funcion para actualizar el tiempo de la ESP32
+void updateESP32Time(unsigned long timestamp){
+  timeval tv;
+  tv.tv_sec = timestamp;
+  tv.tv_usec = 0;
+  settimeofday(&tv, nullptr); //actualizar el tiempo de la esp32
+  Serial.println("Tiempor de la ESP32 actualizado.");  
+}
 void onWebSocketMessage(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len){
   if(type == WS_EVT_DATA){
-    Serial.println("Aqui va todo el proceso de la lectura de los Json");
+    //Serial.println("Aqui va todo el proceso de la lectura de los Json");
+    //Si hay mensaje
+    Serial.print("Menssage length: ");
+    Serial.println(len);//longitud del mensaje JSON
+    if(len > 0){//El mensaje existe
+      //convertir los datos en una cadena
+      String message = String((char*)data);
+      Serial.println("Mensaje recibido");
+
+      //crear un objeto JSON para almacenar el mensajel
+      DynamicJsonDocument doc(1024);
+      //JsonDocument doc(1024);
+      //Intentar deserializar el mensaje JSON
+      DeserializationError error = deserializeJson(doc, message);
+      //Si el mensaje es un JSON valido
+      if(!error){
+        Serial.print("El mensaje JSON recibido es valido. ");
+        //comprobar si es un heartbeat
+        const char* tipo = doc["type"];
+        if(strcmp(tipo, "heartbeat") == 0){
+          //Obtener el timestamp del heartbeat
+          unsigned long timestamp = doc["timestamp"];
+          Serial.print("Heartbeat recibido con timestamp: ");
+          Serial.println(timestamp);
+          //actualizar el tiempo de la ESP32
+          updateESP32Time(timestamp);
+          //bandera de recibido
+          heartbeatRecived = true;
+          
+        }//Aqui hay una seria de else if pues type puede ser cualquier cosa
+        //Con estos else if existen las respuestas que el usuario busca desde Qt
+        else if(strcmp(tipo, "motor") == 0){
+          //En caso de que se usen los motores pasa:
+          const char* comando = doc["comando"];
+          if(strcmp(comando, "adelante") == 0){
+            Serial.println("Carrito adelante...");
+            myMotors.adelante();
+            comandoAux = 1;
+          }else if(strcmp(comando, "atras") == 0){
+            Serial.println("Carrito atras...");
+            myMotors.atras();
+            comandoAux = 2;
+          }else if(strcmp(comando, "derecha") == 0){
+            Serial.println("Carrito derecha...");
+            myMotors.derecha();
+            comandoAux = 3;
+          }else if(strcmp(comando, "izquierda") == 0){
+            Serial.println("Carrito izquierda...");
+            myMotors.izquierda();
+            comandoAux = 4;
+          }
+          timeMotorsStart = millis();
+          stateMotors = true;
+        }else if(strcmp(tipo, "servo") == 0){
+          int angulo = doc["angulo"];
+          Serial.print("Moviendo servo al angulo: ");
+          Serial.println(angulo);
+          miservo.write(angulo);
+        }else if(strcmp(tipo, "ultrasonico") == 0){
+          float distancia = 0;
+          Serial.print("Distancia medida: ");
+          Serial.print(distancia);
+          Serial.println("cm");
+          //Crear objeto JSON para enviar las mediciones
+          DynamicJsonDocument doc(256);
+          doc["type"] = "medicionDistancia";
+          doc["distancia"] = distancia;
+          //Serializar el JSON y enviarlo
+          String jsonString;
+          serializeJson(doc, jsonString);
+          client->text(jsonString);
+          //Imprimir el JSON enviado
+          Serial.print("Enviando datos Ultrasonico ");
+          Serial.println(jsonString);
+        }
+      }else{
+        //Si el mensaje no es un JSON valido
+        Serial.println("El mensaje JSON recibido es invalido ;/");
+        
+      }
+    }else{
+      Serial.println("No hay datos recibos");
+    }
+  
   }else if(type == WS_EVT_CONNECT)
     Serial.println("Cliente conectado.");
   else if(type == WS_EVT_DISCONNECT)
-    Serial.println("Cliente conectado");
+    Serial.println("Cliente desconectado");
   
 }
 void sendMsgsJson(AsyncWebSocketClient *client){
   if(heartbeatRecived){
+    //Originalmente aqui se media la temperatura.
     Serial.println("Enviar mensaje Json");
+    //Crear objeto JSON
+    DynamicJsonDocument doc(1024);
+    doc["type"] = "generica";
+    doc["error"] = "niniguno";
+    
+    //Serializar el JSON y enviarlo
+    String jsonString;
+    serializeJson(doc, jsonString);
+    client->text(jsonString);
+    //Imprimir los datos enviados
+    Serial.print("Enviando datos: ");
+    Serial.println(jsonString);
+    Serial.println(" ");
   }
 }
 
@@ -58,10 +173,12 @@ void wsMsgsTask(void *param){
         if(client->status() == WS_CONNECTED){
           ///FUNCION QUE ENVIA LOS DATOS
           Serial.print("Enviar mensaje json ws");
+          sendMsgsJson(client);
         }
       }
       lastTime = millis();
     }
+    vTaskDelay(10 / portTICK_PERIOD_MS);//Retardo para no saturar el procesador
   }
 }
 void accionTask(void *param){
@@ -75,12 +192,21 @@ void accionTask(void *param){
           digitalWrite(blinkPin, estadoLed);
           estadoLed = !estadoLed;
           ta = millis();
+          if(stateMotors){
+            timeMotorsOn = millis();
+            if(comandoAux > 0 && timeMotorsOn-timeMotorsStart > timeON[comandoAux-1]){
+              myMotors.mtrStop();
+              Serial.println("Carrito detenido.");
+              stateMotors = false;
+            }
+          }
         }
       }
 }
 
 void setup(){
   Serial.begin(115200);
+  Serial.println("INICIANDO ESP32");
   pinMode(blinkPin, OUTPUT);
   WiFi.begin(ssid, password);
   while(WiFi.status() != WL_CONNECTED){
@@ -92,6 +218,8 @@ void setup(){
   Serial.println(WiFi.localIP());
 
   //configuracion ws
+    ws.onEvent(onWebSocketMessage);
+    server.addHandler(&ws);
 
   server.begin();
   Serial.println("Servidor WebSocket inciado.");

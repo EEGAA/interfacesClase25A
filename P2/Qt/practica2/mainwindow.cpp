@@ -150,6 +150,7 @@ void MainWindow::on_pushButton_pressed()
 }
 
 
+
 void MainWindow::on_pushButton_2_pressed()
 {
     for(int i = 0; i <= 180; i += 20){

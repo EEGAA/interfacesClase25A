@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+QString myIP = "ws://192.168.114.40/ws";
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -13,6 +14,15 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_webSocket, &QWebSocket::disconnected, this, &MainWindow::onDisconnected);
     connect(m_webSocket, &QWebSocket::textMessageReceived, this, &MainWindow::onTextMessageReceived);
     connect(m_webSocket, &QWebSocket::errorOccurred, this, &MainWindow::onError);
+
+    if(m_connected == false){
+        m_webSocket->open(QUrl(myIP));  // Reemplaza <ESP32_IP> con la IP de tu ESP32
+        m_connected = true;
+    }
+
+    QTimer *cronos = new QTimer(this);
+    cronos->start(1000);
+    connect(cronos, SIGNAL(timeout()),this, SLOT(loop()));
 }
 
 MainWindow::~MainWindow()
@@ -21,7 +31,9 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-
+void MainWindow::loop(){
+    sendHeartbeat();
+}
 
 
 
@@ -53,12 +65,12 @@ void MainWindow::onTextMessageReceived(const QString &message) {
     if (!doc.isNull() && doc.isObject()) {
         QJsonObject jsonObj = doc.object();
 
-        if (jsonObj.contains("type") && jsonObj["type"] == "medicion_distancia") {
-            double adcValue = jsonObj["distancia"].toDouble();
-            qint64 currentTime = QDateTime::currentSecsSinceEpoch();
+        if (jsonObj.contains("type") && jsonObj["type"] == "medicionDistancia") {
+            double disRespuesta = jsonObj["distancia"].toDouble();
+            //qint64 currentTime = QDateTime::currentSecsSinceEpoch();
             //aqui se supone que se graficaba para lo del punto extra
             ui->textEdit->append(message);
-            //ui->lcdNumber_3->display(adcValue);
+            ui->lcdNumber->display(disRespuesta);
             //setData(adcValue, currentTime);
         }
     }
@@ -101,28 +113,65 @@ void MainWindow::connectWebSocket(const QUrl &url) {
         ui->textEdit->append("WebSocket ya está conectado");
     }
 }
+void MainWindow::sendJSON(QJsonObject objJSON){
+    QJsonDocument jsonDoc(objJSON);
+    QString msgsJson = jsonDoc.toJson(QJsonDocument::Compact);
+    if(m_connected)
+        m_webSocket->sendTextMessage(msgsJson);
+}
+void MainWindow::moveMotor(QString direccion){
+    QJsonObject jsonObj;
+    jsonObj["type"] = "motor";
+    jsonObj["comando"] = direccion;
+    sendJSON(jsonObj);
+}
 
-
-void MainWindow::on_pushButton_clicked()
+void MainWindow::on_pushButton_clicked()//adelante
 {
-
+    moveMotor("adelante");
 }
 
 
-void MainWindow::on_pushButton_3_clicked()
+void MainWindow::on_pushButton_3_clicked()//atras
 {
-
+    moveMotor("atras");
 }
 
 
-void MainWindow::on_pushButton_2_clicked()
+void MainWindow::on_pushButton_2_clicked()//derecha
 {
-
+    moveMotor("derecha");
 }
 
 
-void MainWindow::on_pushButton_4_clicked()
+void MainWindow::on_pushButton_4_clicked()//izquierda
 {
+    moveMotor("izquierda");
+}
+void MainWindow::setDial(int angulo){
+    QJsonObject jsonObj;
+    jsonObj["type"] = "servo";
+    jsonObj["angulo"] = angulo;
+    sendJSON(jsonObj);
+}
 
+void MainWindow::on_pushButton_6_clicked()
+{
+    QJsonObject jsonObj;
+    jsonObj["type"] = "ultrasonico";
+    sendJSON(jsonObj);
+
+}
+void MainWindow::on_dial_sliderMoved(int position)
+{
+    ui->lcdNumber_2->display(position);
+}
+
+
+void MainWindow::on_dial_sliderReleased()
+{
+    int angulo = ui->dial->value();
+    ui->lcdNumber_2->display(angulo);
+    setDial(angulo);
 }
 
