@@ -64,7 +64,7 @@ void MainWindow::onTextMessageReceived(const QString &message) {
     QJsonDocument doc = QJsonDocument::fromJson(message.toUtf8());
     if (!doc.isNull() && doc.isObject()) {
         QJsonObject jsonObj = doc.object();
-
+        //En esta parte deben leerse las posibles respuestas JSON del servidor (ESP32)
         if (jsonObj.contains("type") && jsonObj["type"] == "medicionDistancia") {
             double disRespuesta = jsonObj["distancia"].toDouble();
             //qint64 currentTime = QDateTime::currentSecsSinceEpoch();
@@ -173,5 +173,16 @@ void MainWindow::on_dial_sliderReleased()
     int angulo = ui->dial->value();
     ui->lcdNumber_2->display(angulo);
     setDial(angulo);
+}
+
+
+void MainWindow::on_pushButton_7_clicked()
+{
+    m_webSocket->close();
+    m_connected = false;
+    if(m_connected == false){
+        m_webSocket->open(QUrl(myIP));  // Reemplaza <ESP32_IP> con la IP de tu ESP32
+        m_connected = true;
+    }
 }
 

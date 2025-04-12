@@ -11,13 +11,14 @@
 #include <time.h>
 #include <ESP32Servo.h>
 
+#include "ultrasonico.hpp"
+senUltra miUltrasonico = {5, 4};
 #include "miPuenteH.hpp"
 puenteH myMotors = {10, 9, 11, 12};
-
 bool stateMotors = false;
 unsigned long timeMotorsStart = 0, timeMotorsOn = 0;
 int comandoAux;
-int timeON[4] = {500, 50, 25, 25};//Timpo de uso en las 4 direcciones, Milisegundos
+int timeON[4] = {10, 10, 1, 1};//Timpo de uso en las 4 direcciones, microsegundos
 //adelante, atras, derecha, izquierda
 
 #define blinkPin 2
@@ -37,8 +38,8 @@ char password[100] = "PruebaESP32";
 char ssid[100]     = "A2501";
 char password[100] = "A_2501//";
 
-Servo miservo;
-
+Servo miServo;
+#define pinServo 19
 //Configuracion del servidor y websocket
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
@@ -109,9 +110,9 @@ void onWebSocketMessage(AsyncWebSocket *server, AsyncWebSocketClient *client, Aw
           int angulo = doc["angulo"];
           Serial.print("Moviendo servo al angulo: ");
           Serial.println(angulo);
-          miservo.write(angulo);
+          miServo.write(angulo);
         }else if(strcmp(tipo, "ultrasonico") == 0){
-          float distancia = 0;
+          float distancia = miUltrasonico.getDistancia();
           Serial.print("Distancia medida: ");
           Serial.print(distancia);
           Serial.println("cm");
@@ -224,6 +225,11 @@ void setup(){
   server.begin();
   Serial.println("Servidor WebSocket inciado.");
   startTime = millis();
+
+  //configuracion del servo
+  miServo.setPeriodHertz(50);
+  miServo.attach(pinServo, 500, 2400);
+  miServo.write(90);
 
   xTaskCreatePinnedToCore(
     wsMsgsTask,      // funcion de la tarea

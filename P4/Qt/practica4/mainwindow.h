@@ -52,6 +52,8 @@ private slots:
     void on_dial_sliderReleased();
     void setDial(int angulo);
     void sendJSON(QJsonObject objJSON);
+    void on_pushButton_7_clicked();
+
 private:
     Ui::MainWindow *ui;
     QWebSocket *m_webSocket;   // Puntero al WebSocket
