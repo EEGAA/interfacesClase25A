@@ -1,12 +1,14 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-QString myIP = "ws://192.168.114.40/ws";
+QString myIP = "ws://192.168.222.40/ws";
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    ui->lcdNumber->setStyleSheet("color:black");
+    ui->lcdNumber_2->setStyleSheet("color:black");
     m_webSocket = new QWebSocket();
     m_connected = false;
     // Conectar WebSocket

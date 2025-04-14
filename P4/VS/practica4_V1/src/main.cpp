@@ -12,14 +12,14 @@
 #include <ESP32Servo.h>
 
 #include "ultrasonico.hpp"
-senUltra miUltrasonico = {5, 4};
+senUltra miUltrasonico = {7, 6};
 #include "miPuenteH.hpp"
 puenteH myMotors = {10, 9, 11, 12};
 bool stateMotors = false;
 unsigned long timeMotorsStart = 0, timeMotorsOn = 0;
 int comandoAux;
-int timeON[4] = {10, 10, 1, 1};//Timpo de uso en las 4 direcciones, microsegundos
-//adelante, atras, derecha, izquierda
+int timeON[4] = {1000, 1000, 500, 500};//Timpo de uso en las 4 direcciones, milisegundos
+//{adelante, atras, derecha, izquierda}
 
 #define blinkPin 2
 
@@ -32,11 +32,10 @@ char ssid[100]     = "GWN571D04";
 char password[100] = "ESP32CUCEI$$";
 
 char ssid[100]     = "POCO";
-char password[100] = "PruebaESP32";
-
-*/
+char password[100] = "PruebaESP32";*/
 char ssid[100]     = "A2501";
 char password[100] = "A_2501//";
+
 
 Servo miServo;
 #define pinServo 19
@@ -71,8 +70,8 @@ void onWebSocketMessage(AsyncWebSocket *server, AsyncWebSocketClient *client, Aw
       if(!error){
         Serial.print("El mensaje JSON recibido es valido. ");
         //comprobar si es un heartbeat
-        const char* tipo = doc["type"];
-        if(strcmp(tipo, "heartbeat") == 0){
+        String tipo = doc["type"].as<String>();
+        if(tipo == "heartbeat"){
           //Obtener el timestamp del heartbeat
           unsigned long timestamp = doc["timestamp"];
           Serial.print("Heartbeat recibido con timestamp: ");
@@ -84,34 +83,34 @@ void onWebSocketMessage(AsyncWebSocket *server, AsyncWebSocketClient *client, Aw
           
         }//Aqui hay una seria de else if pues type puede ser cualquier cosa
         //Con estos else if existen las respuestas que el usuario busca desde Qt
-        else if(strcmp(tipo, "motor") == 0){
+        else if(tipo == "motor"){
           //En caso de que se usen los motores pasa:
-          const char* comando = doc["comando"];
-          if(strcmp(comando, "adelante") == 0){
+          String comando = doc["comando"].as<String>();
+          if(comando == "adelante"){
             Serial.println("Carrito adelante...");
             myMotors.adelante();
             comandoAux = 1;
-          }else if(strcmp(comando, "atras") == 0){
+          }else if(comando == "atras"){
             Serial.println("Carrito atras...");
             myMotors.atras();
             comandoAux = 2;
-          }else if(strcmp(comando, "derecha") == 0){
+          }else if(comando == "derecha"){
             Serial.println("Carrito derecha...");
             myMotors.derecha();
             comandoAux = 3;
-          }else if(strcmp(comando, "izquierda") == 0){
+          }else if(comando == "izquierda"){
             Serial.println("Carrito izquierda...");
             myMotors.izquierda();
             comandoAux = 4;
           }
           timeMotorsStart = millis();
           stateMotors = true;
-        }else if(strcmp(tipo, "servo") == 0){
+        }else if(tipo == "servo"){
           int angulo = doc["angulo"];
           Serial.print("Moviendo servo al angulo: ");
           Serial.println(angulo);
           miServo.write(angulo);
-        }else if(strcmp(tipo, "ultrasonico") == 0){
+        }else if(tipo == "ultrasonico"){
           float distancia = miUltrasonico.getDistancia();
           Serial.print("Distancia medida: ");
           Serial.print(distancia);
@@ -123,7 +122,12 @@ void onWebSocketMessage(AsyncWebSocket *server, AsyncWebSocketClient *client, Aw
           //Serializar el JSON y enviarlo
           String jsonString;
           serializeJson(doc, jsonString);
-          client->text(jsonString);
+          if(client->status() == WS_CONNECTED && client->canSend()){
+            client->text(jsonString);
+          }else{
+            Serial.println("Cliente no disponible.");
+          }
+          
           //Imprimir el JSON enviado
           Serial.print("Enviando datos Ultrasonico ");
           Serial.println(jsonString);
@@ -155,7 +159,11 @@ void sendMsgsJson(AsyncWebSocketClient *client){
     //Serializar el JSON y enviarlo
     String jsonString;
     serializeJson(doc, jsonString);
-    client->text(jsonString);
+    if(client->status() == WS_DISCONNECTED && client->canSend()){
+      client->text(jsonString);
+    }else{
+      Serial.println("Cliente no disponible.");
+    }
     //Imprimir los datos enviados
     Serial.print("Enviando datos: ");
     Serial.println(jsonString);
@@ -183,26 +191,17 @@ void wsMsgsTask(void *param){
   }
 }
 void accionTask(void *param){
-  long int ta = millis();
-    long int tb = 0;
-    bool estadoLed = false;
-    //aqui
     while (1) {
-        tb = millis();
-        if((tb - ta) > myTime*2){
-          digitalWrite(blinkPin, estadoLed);
-          estadoLed = !estadoLed;
-          ta = millis();
-          if(stateMotors){
-            timeMotorsOn = millis();
-            if(comandoAux > 0 && timeMotorsOn-timeMotorsStart > timeON[comandoAux-1]){
-              myMotors.mtrStop();
-              Serial.println("Carrito detenido.");
-              stateMotors = false;
-            }
-          }
+      if(stateMotors){
+        timeMotorsOn = millis();
+        if((timeMotorsOn - timeMotorsStart) > timeON[comandoAux-1]){
+          myMotors.mtrStop();
+          Serial.println("Carrito detenido.");
+          stateMotors = false;
         }
       }
+      vTaskDelay(10 / portTICK_PERIOD_MS);//Retardo para no saturar el procesador
+    }
 }
 
 void setup(){
@@ -210,12 +209,13 @@ void setup(){
   Serial.println("INICIANDO ESP32");
   pinMode(blinkPin, OUTPUT);
   WiFi.begin(ssid, password);
+  Serial.print("\nConetado a la red: ");
+  Serial.println(ssid);
   while(WiFi.status() != WL_CONNECTED){
-    delay(2000);
-    Serial.println("Conectando a red WiFi...");
+    delay(1000);
+    Serial.print("..");
   }
-  Serial.println("Conetado a la red...   :)");
-  Serial.print("IP asignada: ");
+  Serial.print("\nCONECTADO!!!\nIP asignada: ");
   Serial.println(WiFi.localIP());
 
   //configuracion ws
