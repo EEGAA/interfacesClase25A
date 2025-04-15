@@ -25,6 +25,7 @@ private:
     digitalWrite(b1, 0);
     digitalWrite(b2, 0);
   }
+  
   void adelante(){
     mtrA(0);
     mtrB(1);
@@ -34,12 +35,11 @@ private:
     mtrB(0);
   }
   void derecha(){
-    mtrA(0);
-    mtrB(0);
-  }
-  void izquierda(){
     mtrA(1);
     mtrB(1);
   }
-
+  void izquierda(){
+    mtrA(0);
+    mtrB(0);
+  }
 };

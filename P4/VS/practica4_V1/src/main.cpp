@@ -14,14 +14,17 @@
 #include "ultrasonico.hpp"
 senUltra miUltrasonico = {7, 6};
 #include "miPuenteH.hpp"
-puenteH myMotors = {10, 9, 11, 12};
+puenteH myMotors = {12, 11, 10, 9};
 bool stateMotors = false;
 unsigned long timeMotorsStart = 0, timeMotorsOn = 0;
 int comandoAux;
-int timeON[4] = {1000, 1000, 500, 500};//Timpo de uso en las 4 direcciones, milisegundos
+int timeON[4] = {500, 500, 250, 250};//Timpo de uso en las 4 direcciones, milisegundos
 //{adelante, atras, derecha, izquierda}
-
-#define blinkPin 2
+#include "dataDistacia.hpp"
+dtaDIS myDta;
+bool iniciarBusqueda = false;
+int objBuscado = -1;
+AsyncWebSocketClient* clientBusqueda = nullptr;
 
 bool heartbeatRecived = false;
 unsigned long startTime, lastTime = 0, myTime = 1000;
@@ -32,7 +35,8 @@ char ssid[100]     = "GWN571D04";
 char password[100] = "ESP32CUCEI$$";
 
 char ssid[100]     = "POCO";
-char password[100] = "PruebaESP32";*/
+char password[100] = "PruebaESP32";
+*/
 char ssid[100]     = "A2501";
 char password[100] = "A_2501//";
 
@@ -102,6 +106,10 @@ void onWebSocketMessage(AsyncWebSocket *server, AsyncWebSocketClient *client, Aw
             Serial.println("Carrito izquierda...");
             myMotors.izquierda();
             comandoAux = 4;
+          }else if(comando == "stop"){
+            Serial.println("Carrito parado");
+            myMotors.mtrStop();
+            //comando == 0;
           }
           timeMotorsStart = millis();
           stateMotors = true;
@@ -131,6 +139,28 @@ void onWebSocketMessage(AsyncWebSocket *server, AsyncWebSocketClient *client, Aw
           //Imprimir el JSON enviado
           Serial.print("Enviando datos Ultrasonico ");
           Serial.println(jsonString);
+        }else if(tipo == "busqueda"){
+          if(doc.containsKey("objeto")){
+            objBuscado = doc["objeto"];
+            clientBusqueda = client;
+            iniciarBusqueda = true;
+            Serial.println("Solicitud de busqueda recibida");
+          }
+        }else if(tipo = "setTimeMotors"){
+          int adelanteTime = doc["adelante"].as<int>();
+          int atrasTime = doc["atras"].as<int>();
+          int lateralesTime = doc["laterales"].as<int>();
+          if(adelanteTime > 0 && atrasTime > 0 && lateralesTime > 0){
+            timeON[0] = adelanteTime;
+            timeON[1] = atrasTime;
+            timeON[2] = lateralesTime;
+            timeON[3] = timeON[2];
+          }else{
+            timeON[0] = 500;
+            timeON[1] = 500;
+            timeON[2] = 250;
+            timeON[3] = timeON[2];
+          }
         }
       }else{
         //Si el mensaje no es un JSON valido
@@ -191,7 +221,7 @@ void wsMsgsTask(void *param){
   }
 }
 void accionTask(void *param){
-    while (1) {
+    while(true){
       if(stateMotors){
         timeMotorsOn = millis();
         if((timeMotorsOn - timeMotorsStart) > timeON[comandoAux-1]){
@@ -203,17 +233,50 @@ void accionTask(void *param){
       vTaskDelay(10 / portTICK_PERIOD_MS);//Retardo para no saturar el procesador
     }
 }
+void busquedaTask(void *param){
+  while(true){
+    if(iniciarBusqueda && clientBusqueda != nullptr){
+      for(int i=0; i <= 180; i++){
+        miServo.write(i);
+        float d = miUltrasonico.getDistancia();
+        myDta.setDTA(i, d);
+        delay(20);
+      }
 
+      int aquiEsta = myDta.busqueda(objBuscado);
+      float busDis = myDta.getDTA(aquiEsta);
+      miServo.write(aquiEsta);
+
+      DynamicJsonDocument response(256);
+      response["type"] = "medicionDistancia";
+      response["distancia"] = busDis;
+      String jsonString;
+      serializeJson(response, jsonString);
+
+      if(clientBusqueda->status() == WS_CONNECTED && clientBusqueda->canSend()){
+        clientBusqueda->text(jsonString);
+      }
+
+      Serial.println("Búsqueda completada y respuesta enviada.");
+      iniciarBusqueda = false;
+      clientBusqueda = nullptr;
+    }
+    vTaskDelay(20 / portTICK_PERIOD_MS); // Esperar entre chequeos
+  }
+}
 void setup(){
   Serial.begin(115200);
-  Serial.println("INICIANDO ESP32");
-  pinMode(blinkPin, OUTPUT);
+  Serial.println("\n\nINICIANDO ESP32");
   WiFi.begin(ssid, password);
   Serial.print("\nConetado a la red: ");
   Serial.println(ssid);
+  int cont = 0;
   while(WiFi.status() != WL_CONNECTED){
     delay(1000);
     Serial.print("..");
+    if(cont==10)
+      ESP.restart();
+    cont++;
   }
   Serial.print("\nCONECTADO!!!\nIP asignada: ");
   Serial.println(WiFi.localIP());
@@ -242,10 +305,18 @@ void setup(){
     xTaskCreatePinnedToCore(
     accionTask,    // funcion de la tarea
     "Task accion", // nombre de la tarea
-    2048,          // tama;o de la pila
+    4096,          // tama;o de la pila
     NULL,          // parametro de entrada
     1,             // prioridad
     NULL,          // puntero de la tarea
     1);            // ejecutar en el core 0
+    xTaskCreatePinnedToCore(
+    busquedaTask,
+    "tarea de busqueda",
+    4096,
+    NULL,
+    1,
+    NULL,
+    1);
 }
 void loop(){}

@@ -9,6 +9,12 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     ui->lcdNumber->setStyleSheet("color:black");
     ui->lcdNumber_2->setStyleSheet("color:black");
+    ui->lcdNumber_3->setStyleSheet("color:black");
+    ui->lcdNumber_4->setStyleSheet("color:black");
+    ui->lcdNumber_5->setStyleSheet("color:black");
+    ui->lcdNumber_3->display(ui->dial_2->value());
+    ui->lcdNumber_4->display(ui->dial_3->value());
+    ui->lcdNumber_5->display(ui->dial_4->value());
     m_webSocket = new QWebSocket();
     m_connected = false;
     // Conectar WebSocket
@@ -25,6 +31,27 @@ MainWindow::MainWindow(QWidget *parent)
     QTimer *cronos = new QTimer(this);
     cronos->start(1000);
     connect(cronos, SIGNAL(timeout()),this, SLOT(loop()));
+
+    // Configuración para gráfica de distancia
+    chartTemp = new QChart();
+    seriesTemp = new QLineSeries();
+    chartTemp->addSeries(seriesTemp);
+    chartTemp->setTitle("Sensor Ultrasonico");
+
+    axisXTemp = new QValueAxis();
+    axisXTemp->setTitleText("Tiempo [s]");
+    axisXTemp->setRange(0, 50);
+    chartTemp->addAxis(axisXTemp, Qt::AlignBottom);
+    seriesTemp->attachAxis(axisXTemp);
+
+    // Inicializar el eje Y para distancia y configurarlo
+    axisYTemp = new QValueAxis();
+    axisYTemp->setTitleText("Distancia [cm]");
+    axisYTemp->setRange(0, 150);  // Ajusta según el rango esperado de distancia
+    chartTemp->addAxis(axisYTemp, Qt::AlignLeft);
+    seriesTemp->attachAxis(axisYTemp);
+
+    ui->widget->setChart(chartTemp);
 }
 
 MainWindow::~MainWindow()
@@ -35,9 +62,21 @@ MainWindow::~MainWindow()
 
 void MainWindow::loop(){
     sendHeartbeat();
+    if(ui->checkBox->isChecked()){
+        msgsUltra();
+    }
 }
 
-
+void MainWindow::setData(double temp, qint64 timestamp){
+    qint64 currentTime = timestamp - startTime;
+    dataPointsTemp.append(QPoint(currentTime, temp));
+    while(!dataPointsTemp.isEmpty() && currentTime - dataPointsTemp.first().x() > 60){
+        dataPointsTemp.removeFirst();
+    }
+    seriesTemp->replace(dataPointsTemp);
+    axisXTemp->setRange(currentTime - 60, currentTime);
+    axisYTemp->setRange(0, 100);
+}
 
 
 void MainWindow::sendHeartbeat() {
@@ -69,11 +108,12 @@ void MainWindow::onTextMessageReceived(const QString &message) {
         //En esta parte deben leerse las posibles respuestas JSON del servidor (ESP32)
         if (jsonObj.contains("type") && jsonObj["type"] == "medicionDistancia") {
             double disRespuesta = jsonObj["distancia"].toDouble();
-            //qint64 currentTime = QDateTime::currentSecsSinceEpoch();
+            qint64 currentTime = QDateTime::currentSecsSinceEpoch();
             //aqui se supone que se graficaba para lo del punto extra
             ui->textEdit->append(message);
             ui->lcdNumber->display(disRespuesta);
-            //setData(adcValue, currentTime);
+            if(ui->checkBox->isChecked())
+                setData(disRespuesta, currentTime);
         }
     }
 }
@@ -127,7 +167,11 @@ void MainWindow::moveMotor(QString direccion){
     jsonObj["comando"] = direccion;
     sendJSON(jsonObj);
 }
-
+void MainWindow::msgsUltra(){
+    QJsonObject jsonObj;
+    jsonObj["type"] = "ultrasonico";
+    sendJSON(jsonObj);
+}
 void MainWindow::on_pushButton_clicked()//adelante
 {
     moveMotor("adelante");
@@ -159,9 +203,7 @@ void MainWindow::setDial(int angulo){
 
 void MainWindow::on_pushButton_6_clicked()
 {
-    QJsonObject jsonObj;
-    jsonObj["type"] = "ultrasonico";
-    sendJSON(jsonObj);
+    msgsUltra();
 
 }
 void MainWindow::on_dial_sliderMoved(int position)
@@ -186,5 +228,76 @@ void MainWindow::on_pushButton_7_clicked()
         m_webSocket->open(QUrl(myIP));  // Reemplaza <ESP32_IP> con la IP de tu ESP32
         m_connected = true;
     }
+}
+
+
+void MainWindow::on_pushButton_5_clicked()
+{
+    moveMotor("stop");
+}
+
+
+void MainWindow::on_pushButton_8_pressed()
+{
+    QJsonObject jsonObj;
+    jsonObj["type"] = "busqueda";
+    QString obj = "\""+ QString::number(ui->comboBox->currentIndex()) +"\"";
+    jsonObj["objeto"] = obj;
+    sendJSON(jsonObj);
+}
+
+
+void MainWindow::on_dial_2_sliderMoved(int position)
+{
+    ui->lcdNumber_3->display(position);
+}
+
+
+void MainWindow::on_dial_2_sliderReleased()
+{
+    int valor = ui->dial_2->value();
+    ui->lcdNumber_3->display(valor);
+}
+
+
+void MainWindow::on_dial_3_sliderMoved(int position)
+{
+    ui->lcdNumber_4->display(position);
+}
+
+
+void MainWindow::on_dial_3_sliderReleased()
+{
+    int valor = ui->dial_3->value();
+    ui->lcdNumber_4->display(valor);
+}
+
+
+void MainWindow::on_dial_4_sliderMoved(int position)
+{
+    ui->lcdNumber_5->display(position);
+}
+
+
+void MainWindow::on_dial_4_sliderReleased()
+{
+    int valor = ui->dial_4->value();
+    ui->lcdNumber_5->display(valor);
+}
+
+
+void MainWindow::on_pushButton_9_clicked()
+{
+
+    QJsonObject jsonObj;
+    jsonObj["type"] = "setTimeMotors";
+    jsonObj["adelante"] = QString::number(ui->dial_2->value());
+    jsonObj["atras"] = QString::number(ui->dial_3->value());
+    jsonObj["laterales"] = QString::number(ui->dial_4->value());
+    //Para mostrar el objeto json es necesario convertirlo en una cadena
+    QJsonDocument jsonDoc(jsonObj);
+    QString mensajeJson = jsonDoc.toJson(QJsonDocument::Compact);
+    qDebug() << mensajeJson;
+    sendJSON(jsonObj);
 }
 

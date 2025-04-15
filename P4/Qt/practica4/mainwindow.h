@@ -54,9 +54,37 @@ private slots:
     void sendJSON(QJsonObject objJSON);
     void on_pushButton_7_clicked();
 
+    void on_pushButton_5_clicked();
+
+    void setData(double temp, qint64 timestamp);
+    void msgsUltra();
+    void on_pushButton_8_pressed();
+
+    void on_dial_2_sliderMoved(int position);
+
+    void on_dial_2_sliderReleased();
+
+    void on_dial_3_sliderMoved(int position);
+
+    void on_dial_3_sliderReleased();
+
+    void on_dial_4_sliderMoved(int position);
+
+    void on_dial_4_sliderReleased();
+
+    void on_pushButton_9_clicked();
+
 private:
     Ui::MainWindow *ui;
     QWebSocket *m_webSocket;   // Puntero al WebSocket
     bool m_connected;
+
+    QChart *chartTemp;
+    QLineSeries *seriesTemp;
+    QValueAxis *axisXTemp;
+    QValueAxis *axisYTemp;
+
+    QList<QPointF> dataPointsTemp;
+    qint64 startTime;
 };
 #endif // MAINWINDOW_H
