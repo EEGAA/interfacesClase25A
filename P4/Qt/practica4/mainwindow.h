@@ -13,6 +13,7 @@
 #include <QChart>
 #include <QValueAxis>
 #include <QTimer>
+#include <QKeyEvent>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -25,8 +26,12 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    MainWindow(QWidget *parent = nullptr);
+    //MainWindow(QWidget *parent = nullptr);
+    explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+protected:
+    void keyPressEvent(QKeyEvent *event) override;  // Detecta teclas presionadas
+    //void keyReleaseEvent(QKeyEvent *event) override;  // Detecta teclas liberadas
 private slots:
     void onConnected();
     void onTextMessageReceived(const QString &message);
@@ -74,6 +79,9 @@ private slots:
 
     void on_pushButton_9_clicked();
 
+    void on_pushButton_10_clicked();
+
+    void setTimeMotors(QString adelante, QString atras, QString laterales);
 private:
     Ui::MainWindow *ui;
     QWebSocket *m_webSocket;   // Puntero al WebSocket

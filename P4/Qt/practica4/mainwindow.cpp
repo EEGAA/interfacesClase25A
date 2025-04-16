@@ -1,12 +1,13 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-QString myIP = "ws://192.168.222.40/ws";
+QString myIP = "ws://192.168.100.164/ws";
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    setFocusPolicy(Qt::StrongFocus);  // Acepta eventos de teclado
     ui->lcdNumber->setStyleSheet("color:black");
     ui->lcdNumber_2->setStyleSheet("color:black");
     ui->lcdNumber_3->setStyleSheet("color:black");
@@ -58,6 +59,35 @@ MainWindow::~MainWindow()
 {
     m_webSocket->close();
     delete ui;
+}
+
+void MainWindow::keyPressEvent(QKeyEvent *event){
+    int key = event->key();//Aqui se obtiene el codigo de la tecla pulsada
+    switch(key){
+    case Qt::Key_W:
+        moveMotor("adelante");
+        qDebug()<<"tecla W";
+        break;
+    case Qt::Key_S:
+        moveMotor("atras");
+        qDebug()<<"tecla S";
+        break;
+    case Qt::Key_D:
+        moveMotor("derecha");
+        qDebug()<<"tecla D";
+        break;
+    case Qt::Key_A:
+        moveMotor("izquierda");
+        qDebug()<<"tecla A";
+        break;
+    case Qt::Key_Space:
+        moveMotor("stop");
+        qDebug()<<"tecla space";
+        break;
+    default:
+        QMainWindow::keyPressEvent(event);
+    }
+
 }
 
 void MainWindow::loop(){
@@ -285,19 +315,31 @@ void MainWindow::on_dial_4_sliderReleased()
     ui->lcdNumber_5->display(valor);
 }
 
-
-void MainWindow::on_pushButton_9_clicked()
-{
-
+void MainWindow::setTimeMotors(QString adelante, QString atras, QString laterales){
     QJsonObject jsonObj;
     jsonObj["type"] = "setTimeMotors";
-    jsonObj["adelante"] = QString::number(ui->dial_2->value());
-    jsonObj["atras"] = QString::number(ui->dial_3->value());
-    jsonObj["laterales"] = QString::number(ui->dial_4->value());
+    jsonObj["adelante"] = adelante;
+    jsonObj["atras"] = atras;
+    jsonObj["laterales"] = laterales;
     //Para mostrar el objeto json es necesario convertirlo en una cadena
     QJsonDocument jsonDoc(jsonObj);
     QString mensajeJson = jsonDoc.toJson(QJsonDocument::Compact);
     qDebug() << mensajeJson;
     sendJSON(jsonObj);
+}
+
+void MainWindow::on_pushButton_9_clicked()
+{
+    QString a, b, c;
+    a = QString::number(ui->dial_2->value());
+    b = QString::number(ui->dial_3->value());
+    c = QString::number(ui->dial_4->value());
+    setTimeMotors(a, b, c);
+}
+
+
+void MainWindow::on_pushButton_10_clicked()
+{
+    setTimeMotors("500", "100", "120");
 }
 

@@ -18,7 +18,7 @@ puenteH myMotors = {12, 11, 10, 9};
 bool stateMotors = false;
 unsigned long timeMotorsStart = 0, timeMotorsOn = 0;
 int comandoAux;
-int timeON[4] = {500, 500, 250, 250};//Timpo de uso en las 4 direcciones, milisegundos
+int timeON[4] = {500, 100, 120, 120};//Timpo de uso en las 4 direcciones, milisegundos
 //{adelante, atras, derecha, izquierda}
 #include "dataDistacia.hpp"
 dtaDIS myDta;
