@@ -10,7 +10,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
     setFocusPolicy(Qt::StrongFocus);  // Acepta eventos de teclado
-    ui->lcdNumber->setStyleSheet("color:black");
+    ui->lcdNumber->setStyleSheet("color:purple");
     ui->lcdNumber_2->setStyleSheet("color:black");
     ui->lcdNumber_3->setStyleSheet("color:black");
     ui->lcdNumber_4->setStyleSheet("color:black");
@@ -35,6 +35,12 @@ MainWindow::MainWindow(QWidget *parent)
     ui->pushButton_4->setStyleSheet(styleButtonDir);
     ui->pushButton_5->setStyleSheet(styleButtonStop);
     ui->checkBox->setStyleSheet(checkboxStyle);
+    ui->label_3->setStyleSheet(styleLabelTime);
+    ui->label_7->setStyleSheet(styleLabelTime);
+    ui->lcdNumber_3->setStyleSheet(styleLCDnumberTimes);
+    ui->lcdNumber_4->setStyleSheet(styleLCDnumberTimes);
+    ui->lcdNumber_5->setStyleSheet(styleLCDnumberTimes);
+
     m_webSocket = new QWebSocket();
     m_connected = false;
     // Conectar WebSocket
@@ -308,6 +314,7 @@ void MainWindow::on_dial_2_sliderReleased()
 {
     int valor = ui->dial_2->value();
     ui->lcdNumber_3->display(valor);
+    ui->lcdNumber_3->setStyleSheet(styleLCDnumberTimes2);
 }
 
 
@@ -321,6 +328,7 @@ void MainWindow::on_dial_3_sliderReleased()
 {
     int valor = ui->dial_3->value();
     ui->lcdNumber_4->display(valor);
+    ui->lcdNumber_4->setStyleSheet(styleLCDnumberTimes2);
 }
 
 
@@ -334,6 +342,7 @@ void MainWindow::on_dial_4_sliderReleased()
 {
     int valor = ui->dial_4->value();
     ui->lcdNumber_5->display(valor);
+    ui->lcdNumber_5->setStyleSheet(styleLCDnumberTimes2);
 }
 
 void MainWindow::setTimeMotors(QString adelante, QString atras, QString laterales){
@@ -356,6 +365,9 @@ void MainWindow::on_pushButton_9_clicked()
     b = QString::number(ui->dial_3->value());
     c = QString::number(ui->dial_4->value());
     setTimeMotors(a, b, c);
+    ui->lcdNumber_3->setStyleSheet(styleLCDnumberTimes);
+    ui->lcdNumber_4->setStyleSheet(styleLCDnumberTimes);
+    ui->lcdNumber_5->setStyleSheet(styleLCDnumberTimes);
 }
 
 void MainWindow::preSetTimeMotors(){
@@ -374,5 +386,8 @@ void MainWindow::preSetTimeMotors(){
 void MainWindow::on_pushButton_10_clicked()
 {
     preSetTimeMotors();
+    ui->lcdNumber_3->setStyleSheet(styleLCDnumberTimes);
+    ui->lcdNumber_4->setStyleSheet(styleLCDnumberTimes);
+    ui->lcdNumber_5->setStyleSheet(styleLCDnumberTimes);
 }
 

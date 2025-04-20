@@ -121,7 +121,7 @@ public:
                            "background-color: #1d8348;"  // Color al pasar el mouse
                            "}"
                            "QPushButton:pressed {"
-                           "   background-color: #e67e22;"  // Color al presionar
+                           "background-color: #e67e22;"  // Color al presionar
                            "}";
     QString styleButtonStop = "QPushButton{"
                              "color: black;"
@@ -133,7 +133,7 @@ public:
                              "background-color: #c0392b;"  // Color al pasar el mouse
                              "}"
                               "QPushButton:pressed {"
-                              "   background-color: #e67e22;"  // Color al presionar
+                              "background-color: #e67e22;"  // Color al presionar
                               "}";
     QString checkboxStyle = "QCheckBox {"
                             "   spacing: 5px;"                     // Espacio entre el indicador y el texto
@@ -157,6 +157,27 @@ public:
                             "   border: 2px solid #cccccc;"        // Borde gris cuando está deshabilitado
                             "   background: #f0f0f0;"
                             "}";
+    QString styleLabelTime = "QLabel {"
+                             "   color: #2c3e50;"                  // Color del texto (azul oscuro)
+                             //"   background-color: #ecf0f1;"       // Fondo (gris claro)
+                             "   border: 2px solid #bdc3c7;"       // Borde
+                             "   border-radius: 8px;"              // Bordes redondeados
+                             //"   padding: 1px;"                    // Espacio interno
+                             //"   font-family: 'Arial';"            // Tipo de letra
+                             //"   font-size: 14px;"                 // Tamaño de texto
+                             "}";
+    QString styleLCDnumberTimes = "QLCDNumber {"
+                                  "   background-color: black;"       // Fondo negro
+                                  "   color: #00FF00;"               // Dígitos verdes (estilo clásico de LCD)
+                                  "   border: 2px solid #555555;"    // Borde gris
+                                  "   border-radius: 8px;"           // Bordes redondeados
+                                  "}";
+    QString styleLCDnumberTimes2 = "QLCDNumber {"
+                                  "   background-color: black;"       // Fondo negro
+                                  "   color: #f39c12;"               // Dígitos verdes (estilo clásico de LCD)
+                                  "   border: 2px solid #555555;"    // Borde gris
+                                  "   border-radius: 8px;"           // Bordes redondeados
+                                  "}";
     void keyPressEvent(QKeyEvent *event) override;  // Detecta teclas presionadas
     //void keyReleaseEvent(QKeyEvent *event) override;  // Detecta teclas liberadas
 private slots:
