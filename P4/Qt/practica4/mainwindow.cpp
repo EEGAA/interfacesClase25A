@@ -1,6 +1,8 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-QString myIP = "ws://192.168.100.164/ws";
+//QString myIP = "ws://192.168.100.164/ws";
+QString myIP = "192.168.100.164";
+QString IPws = "ws://" + myIP + "/ws";
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -16,6 +18,23 @@ MainWindow::MainWindow(QWidget *parent)
     ui->lcdNumber_3->display(ui->dial_2->value());
     ui->lcdNumber_4->display(ui->dial_3->value());
     ui->lcdNumber_5->display(ui->dial_4->value());
+
+    ui->dial->setStyleSheet(setStyleDialServo);
+    ui->dial_2->setStyleSheet(setStyleDialTime);
+    ui->dial_3->setStyleSheet(setStyleDialTime);
+    ui->dial_4->setStyleSheet(setStyleDialTime);
+    ui->comboBox->setStyleSheet(setStyleMyComboBox);
+    ui->pushButton_6->setStyleSheet(preSetButton);
+    ui->pushButton_7->setStyleSheet(setReconectButton);
+    ui->pushButton_8->setStyleSheet(preSetButton);
+    ui->pushButton_9->setStyleSheet(preSetButton);
+    ui->pushButton_10->setStyleSheet(preSetTimeButton);
+    ui->pushButton->setStyleSheet(styleButtonDir);
+    ui->pushButton_2->setStyleSheet(styleButtonDir);
+    ui->pushButton_3->setStyleSheet(styleButtonDir);
+    ui->pushButton_4->setStyleSheet(styleButtonDir);
+    ui->pushButton_5->setStyleSheet(styleButtonStop);
+    ui->checkBox->setStyleSheet(checkboxStyle);
     m_webSocket = new QWebSocket();
     m_connected = false;
     // Conectar WebSocket
@@ -25,7 +44,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_webSocket, &QWebSocket::errorOccurred, this, &MainWindow::onError);
 
     if(m_connected == false){
-        m_webSocket->open(QUrl(myIP));  // Reemplaza <ESP32_IP> con la IP de tu ESP32
+        m_webSocket->open(QUrl(IPws));
         m_connected = true;
     }
 
@@ -53,6 +72,8 @@ MainWindow::MainWindow(QWidget *parent)
     seriesTemp->attachAxis(axisYTemp);
 
     ui->widget->setChart(chartTemp);
+
+    preSetTimeMotors();
 }
 
 MainWindow::~MainWindow()
@@ -190,14 +211,15 @@ void MainWindow::sendJSON(QJsonObject objJSON){
     QString msgsJson = jsonDoc.toJson(QJsonDocument::Compact);
     if(m_connected)
         m_webSocket->sendTextMessage(msgsJson);
+    qDebug()<<"El mensaja enviado: " + msgsJson;
 }
-void MainWindow::moveMotor(QString direccion){
+void MainWindow::moveMotor(QString direccion){//direccion solo puede ser una de estas "atras, adelante, derecha, izquierda, stop"
     QJsonObject jsonObj;
     jsonObj["type"] = "motor";
     jsonObj["comando"] = direccion;
     sendJSON(jsonObj);
 }
-void MainWindow::msgsUltra(){
+void MainWindow::msgsUltra(){//Utilizada cada que se requiere la distancia del sensor
     QJsonObject jsonObj;
     jsonObj["type"] = "ultrasonico";
     sendJSON(jsonObj);
@@ -224,10 +246,10 @@ void MainWindow::on_pushButton_4_clicked()//izquierda
 {
     moveMotor("izquierda");
 }
-void MainWindow::setDial(int angulo){
+void MainWindow::setDial(int angulo){//utilizada cada que se requiere mover el servo
     QJsonObject jsonObj;
     jsonObj["type"] = "servo";
-    jsonObj["angulo"] = angulo;
+    jsonObj["angulo"] = 180 - angulo;
     sendJSON(jsonObj);
 }
 
@@ -250,12 +272,12 @@ void MainWindow::on_dial_sliderReleased()
 }
 
 
-void MainWindow::on_pushButton_7_clicked()
+void MainWindow::on_pushButton_7_clicked()//poder reconectar sin tener que cerrar y abrir la intrafaz
 {
     m_webSocket->close();
     m_connected = false;
     if(m_connected == false){
-        m_webSocket->open(QUrl(myIP));  // Reemplaza <ESP32_IP> con la IP de tu ESP32
+        m_webSocket->open(QUrl(IPws));
         m_connected = true;
     }
 }
@@ -267,12 +289,11 @@ void MainWindow::on_pushButton_5_clicked()
 }
 
 
-void MainWindow::on_pushButton_8_pressed()
+void MainWindow::on_pushButton_8_pressed()//Segun el comboBox busca el objeto mas cercano o el mas lejano
 {
     QJsonObject jsonObj;
     jsonObj["type"] = "busqueda";
-    QString obj = "\""+ QString::number(ui->comboBox->currentIndex()) +"\"";
-    jsonObj["objeto"] = obj;
+    jsonObj["objeto"] = QString::number(ui->comboBox->currentIndex());
     sendJSON(jsonObj);
 }
 
@@ -321,10 +342,10 @@ void MainWindow::setTimeMotors(QString adelante, QString atras, QString laterale
     jsonObj["adelante"] = adelante;
     jsonObj["atras"] = atras;
     jsonObj["laterales"] = laterales;
-    //Para mostrar el objeto json es necesario convertirlo en una cadena
+    /*//Para mostrar el objeto json es necesario convertirlo en una cadena
     QJsonDocument jsonDoc(jsonObj);
     QString mensajeJson = jsonDoc.toJson(QJsonDocument::Compact);
-    qDebug() << mensajeJson;
+    qDebug() << mensajeJson;*/
     sendJSON(jsonObj);
 }
 
@@ -337,9 +358,21 @@ void MainWindow::on_pushButton_9_clicked()
     setTimeMotors(a, b, c);
 }
 
+void MainWindow::preSetTimeMotors(){
+    //Estos son los tiempos de activacion que yo recomiendo
+    QString a = "250", b = "100", c = "120";//a = adelante, b = atras, c = laterales
+    int aI = a.toInt(), bI = b.toInt(), cI = c.toInt();
+    setTimeMotors(a, b, c);
+    ui->lcdNumber_3->display(aI);
+    ui->dial_2->setValue(aI);
+    ui->lcdNumber_4->display(bI);
+    ui->dial_3->setValue(bI);
+    ui->lcdNumber_5->display(cI);
+    ui->dial_4->setValue(cI);
+}
 
 void MainWindow::on_pushButton_10_clicked()
 {
-    setTimeMotors("500", "100", "120");
+    preSetTimeMotors();
 }
 
