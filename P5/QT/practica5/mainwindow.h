@@ -44,52 +44,52 @@ public:
                            "   background-color: #3e8e41;"  // Color al presionar
                            "}";
     QString preSetTimeButton = "QPushButton {"
-                           "   border-radius: 10px;"
-                           "   border: 2px solid #555;"
-                           "   background-color: #e67e22;"
-                           "   padding: 5px;"
-                           "}"
-                           "QPushButton:hover {"
-                           "   background-color:  #ca6f1e;"  // Color al pasar el mouse
-                           "}"
-                           "QPushButton:pressed {"
-                           "   background-color: #e67e22;"  // Color al presionar
-                           "}";
-    QString setReconectButton = "QPushButton {"
                                "   border-radius: 10px;"
                                "   border: 2px solid #555;"
-                               "   background-color: #a93226;"
+                               "   background-color: #e67e22;"
                                "   padding: 5px;"
                                "}"
                                "QPushButton:hover {"
-                               "   background-color:  #c0392b;"  // Color al pasar el mouse
+                               "   background-color:  #ca6f1e;"  // Color al pasar el mouse
                                "}"
                                "QPushButton:pressed {"
-                               "   background-color: #a93226;"  // Color al presionar
+                               "   background-color: #e67e22;"  // Color al presionar
                                "}";
-    QString setStyleMyComboBox = "QComboBox {"
+    QString setReconectButton = "QPushButton {"
                                 "   border-radius: 10px;"
-                                "   border: 1px solid #8e44ad;"
-                                "   background: black;"
-                                "   color: white;"
+                                "   border: 2px solid #555;"
+                                "   background-color: #a93226;"
+                                "   padding: 5px;"
                                 "}"
-                                "QComboBox:hover {"
-                                "   border: 1px solid #4CAF50;"
+                                "QPushButton:hover {"
+                                "   background-color: #c0392b;"  // Color al pasar el mouse
                                 "}"
-                                "QComboBox::drop-down {"
-                                "   subcontrol-origin: padding;"
-                                "   subcontrol-position: right center;"
-                                "   width: 15px;"
-                                "   border-left: 1px solid #f7dc6f;"
-                                "}"
-                                "QComboBox::down-arrow {"
-                                ///"   image: none;"  // Desactiva la flecha predeterminada
-                                "   width: 1;"
-                                "   height: 1;"
-                                "   border-left: 5px solid transparent;"
-                                "   border-right: 5px solid transparent;"
-                                "   border-top: 5px solid #f7dc6f;"  // Color amarillo (igual que la línea divisoria)
+                                "QPushButton:pressed {"
+                                "   background-color: #a93226;"  // Color al presionar
                                 "}";
+    QString setStyleMyComboBox = "QComboBox {"
+                                 "   border-radius: 10px;"
+                                 "   border: 1px solid #8e44ad;"
+                                 "   background: black;"
+                                 "   color: white;"
+                                 "}"
+                                 "QComboBox:hover {"
+                                 "   border: 1px solid #4CAF50;"
+                                 "}"
+                                 "QComboBox::drop-down {"
+                                 "   subcontrol-origin: padding;"
+                                 "   subcontrol-position: right center;"
+                                 "   width: 15px;"
+                                 "   border-left: 1px solid #f7dc6f;"
+                                 "}"
+                                 "QComboBox::down-arrow {"
+                                 ///"   image: none;"  // Desactiva la flecha predeterminada
+                                 "   width: 1;"
+                                 "   height: 1;"
+                                 "   border-left: 5px solid transparent;"
+                                 "   border-right: 5px solid transparent;"
+                                 "   border-top: 5px solid #f7dc6f;"  // Color amarillo (igual que la línea divisoria)
+                                 "}";
     QString setStyleDialServo = "QDial {"
                                 "   background-color: #f0f0f0;"    // Fondo del dial
                                 "   border-radius: 20px;"          // Bordes completamente redondeados (círculo)
@@ -102,37 +102,37 @@ public:
                                 "   border-radius: 6px;"           // Forma circular
                                 "}";
     QString setStyleDialTime = "QDial {"
-                                "   background-color: #2c3e50;"    // Fondo del dial
-                                "   border-radius: 20px;"          // Bordes completamente redondeados (círculo)
-                                "   border: 2px solid #aaa;"       // Borde
-                                "}"
-                                "QDial::handle {"
-                                "   background: #4CAF50;"          // Color del indicador (agarre)
-                                "   width: 12px;"                  // Ancho del indicador
-                                "   height: 12px;"                 // Alto del indicador
-                                "   border-radius: 6px;"           // Forma circular
-                                "}";
+                               "   background-color: #2c3e50;"    // Fondo del dial
+                               "   border-radius: 20px;"          // Bordes completamente redondeados (círculo)
+                               "   border: 2px solid #aaa;"       // Borde
+                               "}"
+                               "QDial::handle {"
+                               "   background: #4CAF50;"          // Color del indicador (agarre)
+                               "   width: 12px;"                  // Ancho del indicador
+                               "   height: 12px;"                 // Alto del indicador
+                               "   border-radius: 6px;"           // Forma circular
+                               "}";
     QString styleButtonDir = "QPushButton{"
-                           "color: black;" //color de la letra en el boton
-                           "background: #2ecc71;"
-                           "border-radius: 35px;"
-                           "border: 2px solid #01631f;"
-                           "}"
-                           "QPushButton:hover {"
-                           "background-color: #1d8348;"  // Color al pasar el mouse
-                           "}"
-                           "QPushButton:pressed {"
-                           "background-color: #e67e22;"  // Color al presionar
-                           "}";
-    QString styleButtonStop = "QPushButton{"
-                             "color: black;"
-                             "background: #e74c3c;"
-                             "border-radius: 25px;"
-                             "border: 2px solid #641e16;"
+                             "color: black;" //color de la letra en el boton
+                             "background: #2ecc71;"
+                             "border-radius: 35px;"
+                             "border: 2px solid #01631f;"
                              "}"
                              "QPushButton:hover {"
-                             "background-color: #c0392b;"  // Color al pasar el mouse
+                             "background-color: #1d8348;"  // Color al pasar el mouse
                              "}"
+                             "QPushButton:pressed {"
+                             "background-color: #e67e22;"  // Color al presionar
+                             "}";
+    QString styleButtonStop = "QPushButton{"
+                              "color: black;"
+                              "background: #e74c3c;"
+                              "border-radius: 25px;"
+                              "border: 2px solid #641e16;"
+                              "}"
+                              "QPushButton:hover {"
+                              "background-color: #c0392b;"  // Color al pasar el mouse
+                              "}"
                               "QPushButton:pressed {"
                               "background-color: #e67e22;"  // Color al presionar
                               "}";
@@ -146,17 +146,39 @@ public:
                             "   height: 18px;"                     // Alto del cuadro del checkbox
                             "   border: 2px solid #8e44ad;"        // Borde morado
                             "   border-radius: 4px;"               // Bordes ligeramente redondeados
-                            "   background: white;"                // Fondo del cuadro (inactivo)
+                            "   background: #bdc3c7;"                // Fondo del cuadro (inactivo)
                             "}"
                             "QCheckBox::indicator:hover {"
-                            "   border: 2px solid #4CAF50;"        // Borde verde al pasar el mouse
+                            "   border: 2px solid balck;"        // Borde negro al pasar el mouse
                             "}"
                             "QCheckBox::indicator:checked {"
                             "   background: #8e44ad;"              // Fondo morado cuando está marcado
                             "}"
                             "QCheckBox::indicator:disabled {"
                             "   border: 2px solid #cccccc;"        // Borde gris cuando está deshabilitado
-                            "   background: #f0f0f0;"
+                            "   background: #bdc3c7;"
+                            "}";
+    QString checkboxLM35Style = "QCheckBox {"
+                            "   spacing: 5px;"                     // Espacio entre el indicador y el texto
+                            "   color: #333333;"                   // Color del texto
+                            "   font-size: 14px;"                  // Tamaño de fuente
+                            "}"
+                            "QCheckBox::indicator {"
+                            "   width: 18px;"                      // Ancho del cuadro del checkbox
+                            "   height: 18px;"                     // Alto del cuadro del checkbox
+                            "   border: 2px solid #c0392b;"        // Borde morado
+                            "   border-radius: 4px;"               // Bordes ligeramente redondeados
+                            "   background: #bdc3c7;"                // Fondo del cuadro (inactivo)
+                            "}"
+                            "QCheckBox::indicator:hover {"
+                            "   border: 2px solid black;"        // Borde negro al pasar el mouse
+                            "}"
+                            "QCheckBox::indicator:checked {"
+                            "   background: #c0392b;"              // Fondo rojo cuando está marcado
+                            "}"
+                            "QCheckBox::indicator:disabled {"
+                            "   border: 2px solid #cccccc;"        // Borde gris cuando está deshabilitado
+                            "   background: #bdc3c7;"
                             "}";
     QString styleLabelTime = "QLabel {"
                              "   color: #2c3e50;"                  // Color del texto (azul oscuro)
@@ -174,11 +196,11 @@ public:
                                   "   border-radius: 8px;"           // Bordes redondeados
                                   "}";
     QString styleLCDnumberTimes2 = "QLCDNumber {"
-                                  "   background-color: black;"       // Fondo negro
-                                  "   color: #f39c12;"               // Dígitos naranjaws (estilo clásico de LCD)
-                                  "   border: 2px solid #f39c12;"    // Borde naranja
-                                  "   border-radius: 8px;"           // Bordes redondeados
-                                  "}";
+                                   "   background-color: black;"       // Fondo negro
+                                   "   color: #f39c12;"               // Dígitos naranjaws (estilo clásico de LCD)
+                                   "   border: 2px solid #f39c12;"    // Borde naranja
+                                   "   border-radius: 8px;"           // Bordes redondeados
+                                   "}";
     QString styleLCDnumberA = "QLCDNumber {"
                               "   background-color: transparent;"       // sin Fondo
                               "   color: purple;"               // Dígitos morados (estilo clásico de LCD)
@@ -187,25 +209,25 @@ public:
                               "}";
 
     QString styleTextEdit = "QTextEdit {"
-                             "   background-color: #282a36;"     // Fondo oscuro (tema oscuro)
-                             "   color: #f8f8f2;"               // Texto claro
-                             "   border: 1px solid #6272a4;"    // Borde morado
-                             "   border-radius: 5px;"
-                             "   padding: 12px;"
-                             "   font-family: 'Consolas';"      // Fuente monoespaciada
-                             "   font-size: 9pt;"
+                            "   background-color: #282a36;"     // Fondo oscuro (tema oscuro)
+                            "   color: #f8f8f2;"               // Texto claro
+                            "   border: 1px solid #6272a4;"    // Borde morado
+                            "   border-radius: 5px;"
+                            "   padding: 12px;"
+                            "   font-family: 'Consolas';"      // Fuente monoespaciada
+                            "   font-size: 9pt;"
                             "}"
-                             "QScrollBar:vertical {"            // Barra de desplazamiento vertical
-                             "   width: 12px;"
-                             "   background: #44475a;"
-                             "}"
-                             "QScrollBar::handle:vertical {"
-                             "   background: #6272a4;"          // Color del "agarre"
-                             "   border-radius: 6px;"
-                             "}"
-                             "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {"
-                             "   background: none;"             // Elimina flechas de navegación
-                             "}";
+                            "QScrollBar:vertical {"            // Barra de desplazamiento vertical
+                            "   width: 12px;"
+                            "   background: #44475a;"
+                            "}"
+                            "QScrollBar::handle:vertical {"
+                            "   background: #6272a4;"          // Color del "agarre"
+                            "   border-radius: 6px;"
+                            "}"
+                            "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {"
+                            "   background: none;"             // Elimina flechas de navegación
+                            "}";
     void keyPressEvent(QKeyEvent *event) override;  // Detecta teclas presionadas
     //void keyReleaseEvent(QKeyEvent *event) override;  // Detecta teclas liberadas
 private slots:
@@ -237,7 +259,7 @@ private slots:
 
     void on_pushButton_5_clicked();
 
-    void setData(double temp, qint64 timestamp);
+    void setData(int aux, double distancia, double temperatura, qint64 timestamp);
     void msgsUltra();
     void on_pushButton_8_pressed();
 
@@ -259,17 +281,20 @@ private slots:
 
     void setTimeMotors(QString adelante, QString atras, QString laterales);
     void preSetTimeMotors();
+    void msgsLM35();
 private:
     Ui::MainWindow *ui;
     QWebSocket *m_webSocket;   // Puntero al WebSocket
     bool m_connected;
 
-    QChart *chartTemp;
+    QChart *chart;
+    QLineSeries *seriesDist;
     QLineSeries *seriesTemp;
-    QValueAxis *axisXTemp;
-    //QDateTimeAxis *axisXTemp;
+    QValueAxis *axisX;
+    QValueAxis *axisYDist;
     QValueAxis *axisYTemp;
 
+    QList<QPointF> dataPointsDist;
     QList<QPointF> dataPointsTemp;
     qint64 startTime;
 };

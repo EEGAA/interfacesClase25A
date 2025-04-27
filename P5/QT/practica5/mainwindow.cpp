@@ -11,6 +11,7 @@ MainWindow::MainWindow(QWidget *parent)
     setFocusPolicy(Qt::StrongFocus);  // Acepta eventos de teclado
     ui->lcdNumber->setStyleSheet(styleLCDnumberA);
     ui->lcdNumber_2->setStyleSheet(styleLCDnumberA);
+    ui->lcdNumber_6->setStyleSheet(styleLCDnumberA);
     ui->lcdNumber_3->display(ui->dial_2->value());
     ui->lcdNumber_4->display(ui->dial_3->value());
     ui->lcdNumber_5->display(ui->dial_4->value());
@@ -37,7 +38,8 @@ MainWindow::MainWindow(QWidget *parent)
     ui->lcdNumber_4->setStyleSheet(styleLCDnumberTimes);
     ui->lcdNumber_5->setStyleSheet(styleLCDnumberTimes);
     ui->textEdit->setStyleSheet(styleTextEdit);
-
+    ui->checkBox_2->setStyleSheet(checkboxLM35Style);
+    ui->label->setStyleSheet(styleLabelTime);
     m_webSocket = new QWebSocket();
     m_connected = false;
     // Conectar WebSocket
@@ -55,31 +57,42 @@ MainWindow::MainWindow(QWidget *parent)
     cronos->start(1000);
     connect(cronos, SIGNAL(timeout()),this, SLOT(loop()));
 
-    // Configuración para gráfica de distancia
-    chartTemp = new QChart();
+    // Configuración para gráfica combinada
+    chart = new QChart();
+    chart->setTitle("Datos de Sensores");
+
+    // Series para distancia y temperatura
+    seriesDist = new QLineSeries();
+    seriesDist->setName("Distancia [cm]");
     seriesTemp = new QLineSeries();
-    chartTemp->addSeries(seriesTemp);
-    chartTemp->setTitle("Sensor Ultrasonico");
+    seriesTemp->setName("Temperatura [°C]");
 
-    axisXTemp = new QValueAxis();
-    axisXTemp->setTitleText("Tiempo [s]");
-    axisXTemp->setRange(0, 50);
-    chartTemp->addAxis(axisXTemp, Qt::AlignBottom);
-    seriesTemp->attachAxis(axisXTemp);
-    /*axisXTemp = new QDateTimeAxis;
-    axisXTemp->setFormat("hh:mm:ss");
-    axisXTemp->setTitleText("Tiempo [hh:mm:ss]");
-    chartTemp->addAxis(axisXTemp, Qt::AlignBottom);
-    seriesTemp->attachAxis(axisXTemp);*/
+    chart->addSeries(seriesDist);
+    chart->addSeries(seriesTemp);
 
-    // Inicializar el eje Y para distancia y configurarlo
+    // Eje X común
+    axisX = new QValueAxis();
+    axisX->setTitleText("Tiempo [s]");
+    axisX->setRange(0, 50);
+    chart->addAxis(axisX, Qt::AlignBottom);
+    seriesDist->attachAxis(axisX);
+    seriesTemp->attachAxis(axisX);
+
+    // Eje Y para distancia
+    axisYDist = new QValueAxis();
+    axisYDist->setTitleText("Distancia [cm]");
+    axisYDist->setRange(0, 150);
+    chart->addAxis(axisYDist, Qt::AlignLeft);
+    seriesDist->attachAxis(axisYDist);
+
+    // Eje Y secundario para temperatura
     axisYTemp = new QValueAxis();
-    axisYTemp->setTitleText("Distancia [cm]");
-    axisYTemp->setRange(0, 150);  // Ajusta según el rango esperado de distancia
-    chartTemp->addAxis(axisYTemp, Qt::AlignLeft);
+    axisYTemp->setTitleText("Temperatura [°C]");
+    axisYTemp->setRange(-10, 50);  // Rango típico para temperatura
+    chart->addAxis(axisYTemp, Qt::AlignRight);
     seriesTemp->attachAxis(axisYTemp);
 
-    ui->widget->setChart(chartTemp);
+    ui->widget->setChart(chart);
 
     preSetTimeMotors();
 }
@@ -124,17 +137,52 @@ void MainWindow::loop(){
     if(ui->checkBox->isChecked()){
         msgsUltra();
     }
+    if(ui->checkBox_2->isChecked()){
+        msgsLM35();
+    }
 }
 
-void MainWindow::setData(double temp, qint64 timestamp){
+void MainWindow::setData(int aux, double distancia, double temperatura, qint64 timestamp){
     qint64 currentTime = timestamp - startTime;
-    dataPointsTemp.append(QPoint(currentTime, temp));
-    while(!dataPointsTemp.isEmpty() && currentTime - dataPointsTemp.first().x() > 60){
-        dataPointsTemp.removeFirst();
+
+    if(aux == 0){//Se musetran ambas
+        // Agregar datos de distancia
+        dataPointsDist.append(QPointF(currentTime, distancia));
+        while(!dataPointsDist.isEmpty() && currentTime - dataPointsDist.first().x() > 60) {
+            dataPointsDist.removeFirst();
+        }
+
+        // Agregar datos de temperatura
+        dataPointsTemp.append(QPointF(currentTime, temperatura));
+        while(!dataPointsTemp.isEmpty() && currentTime - dataPointsTemp.first().x() > 60) {
+            dataPointsTemp.removeFirst();
+        }
+
+        // Actualizar series
+        seriesDist->replace(dataPointsDist);
+        seriesTemp->replace(dataPointsTemp);
+    }else if(aux == 1){//solo distancia
+        // Agregar datos de distancia
+        dataPointsDist.append(QPointF(currentTime, distancia));
+        while(!dataPointsDist.isEmpty() && currentTime - dataPointsDist.first().x() > 60) {
+            dataPointsDist.removeFirst();
+        }
+        // Actualizar series
+        seriesDist->replace(dataPointsDist);
+    }else if(aux == 2){//solo temperatura
+        // Agregar datos de temperatura
+        dataPointsTemp.append(QPointF(currentTime, temperatura));
+        while(!dataPointsTemp.isEmpty() && currentTime - dataPointsTemp.first().x() > 60) {
+            dataPointsTemp.removeFirst();
+        }
+        // Actualizar series
+        seriesTemp->replace(dataPointsTemp);
     }
-    seriesTemp->replace(dataPointsTemp);
-    axisXTemp->setRange(currentTime - 60, currentTime);
-    axisYTemp->setRange(0, 100);
+
+    // Actualizar ejes
+    axisX->setRange(currentTime - 60, currentTime);
+    axisYDist->setRange(0, 150);  // Ajustar según necesidad
+    axisYTemp->setRange(-10, 50); // Ajustar según necesidad
 }
 
 
@@ -158,6 +206,8 @@ void MainWindow::onConnected() {
 }
 
 void MainWindow::onTextMessageReceived(const QString &message) {
+    qint64 currentTime;
+    double disRespuesta, temRespuesta;
     qDebug() << "Mensaje recibido:" << message;
     ui->textEdit->append(message);
     // Procesar el mensaje JSON
@@ -165,14 +215,24 @@ void MainWindow::onTextMessageReceived(const QString &message) {
     if (!doc.isNull() && doc.isObject()) {
         QJsonObject jsonObj = doc.object();
         //En esta parte deben leerse las posibles respuestas JSON del servidor (ESP32)
-        if (jsonObj.contains("type") && jsonObj["type"] == "medicionDistancia") {
-            double disRespuesta = jsonObj["distancia"].toDouble();
-            qint64 currentTime = QDateTime::currentSecsSinceEpoch();
-            //aqui se supone que se graficaba para lo del punto extra
-            ui->textEdit->append(message);
-            ui->lcdNumber->display(disRespuesta);
-            if(ui->checkBox->isChecked())
-                setData(disRespuesta, currentTime);
+        if(jsonObj.contains("type") && (jsonObj["type"] == "medicionDistancia" || jsonObj["type"] == "medicionTemperatura")){
+            if (jsonObj["type"] == "medicionDistancia"){
+                disRespuesta = jsonObj["distancia"].toDouble();
+                ui->textEdit->append(message);
+                ui->lcdNumber->display(disRespuesta);
+            }
+            if(jsonObj["type"] == "medicionTemperatura"){
+                temRespuesta = jsonObj["temperatura"].toDouble();
+                ui->textEdit->append(message);
+                ui->lcdNumber_6->display(temRespuesta);
+            }
+            currentTime = QDateTime::currentSecsSinceEpoch();
+            if(ui->checkBox->isChecked() && ui->checkBox_2->isCheckable())
+                setData(1, disRespuesta, 0, currentTime);
+            if(ui->checkBox_2->isChecked() && ui->checkBox->isCheckable())
+                setData(2, 0, temRespuesta, currentTime);
+            if(ui->checkBox->isChecked() && ui->checkBox_2->isChecked())
+                setData(0, disRespuesta, temRespuesta, currentTime);
         }
     }
 }
@@ -232,6 +292,11 @@ void MainWindow::msgsUltra(){//Utilizada cada que se requiere la distancia del s
     jsonObj["type"] = "ultrasonico";
     sendJSON(jsonObj);
 }
+void MainWindow::msgsLM35(){//Utilizada cada que se reguire la temperatura del sensor
+    QJsonObject jsonObj;
+    jsonObj["type"] = "getTemperatura";
+    sendJSON(jsonObj);
+}
 void MainWindow::on_pushButton_clicked()//adelante
 {
     moveMotor("adelante");
@@ -264,7 +329,7 @@ void MainWindow::setDial(int angulo){//utilizada cada que se requiere mover el s
 void MainWindow::on_pushButton_6_clicked()
 {
     msgsUltra();
-
+    msgsLM35();
 }
 void MainWindow::on_dial_sliderMoved(int position)
 {
