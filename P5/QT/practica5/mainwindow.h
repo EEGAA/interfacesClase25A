@@ -259,7 +259,7 @@ private slots:
 
     void on_pushButton_5_clicked();
 
-    void setData(int aux, double distancia, double temperatura, qint64 timestamp);
+    void setData(qint64 timestamp);
     void msgsUltra();
     void on_pushButton_8_pressed();
 
@@ -282,6 +282,8 @@ private slots:
     void setTimeMotors(QString adelante, QString atras, QString laterales);
     void preSetTimeMotors();
     void msgsLM35();
+    qint8 getDecimal(bool a, bool b);
+    void msgsSensores();
 private:
     Ui::MainWindow *ui;
     QWebSocket *m_webSocket;   // Puntero al WebSocket
@@ -297,5 +299,8 @@ private:
     QList<QPointF> dataPointsDist;
     QList<QPointF> dataPointsTemp;
     qint64 startTime;
+
+    qint8 controlCheckBox;//Tengo 2 chekBox por lo que hay 4 combinaciones posibles, esta varible almacena del 0 al 3 ese estado, se usa en el loop
+    double disRespuesta, temRespuesta;//guardan las mediciones de los sensores
 };
 #endif // MAINWINDOW_H

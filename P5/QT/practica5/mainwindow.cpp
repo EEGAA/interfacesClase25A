@@ -134,51 +134,41 @@ void MainWindow::keyPressEvent(QKeyEvent *event){
 
 void MainWindow::loop(){
     sendHeartbeat();
-    if(ui->checkBox->isChecked()){
+    bool a = ui->checkBox_2->isChecked(),
+         b = ui->checkBox->isChecked();
+    controlCheckBox = getDecimal(a, b);
+    //qDebug()<<controlCheckBox;
+    switch(controlCheckBox){
+    case 1:
         msgsUltra();
-    }
-    if(ui->checkBox_2->isChecked()){
+        break;
+    case 2:
         msgsLM35();
+        break;
+    case 3:
+        msgsSensores();
     }
 }
 
-void MainWindow::setData(int aux, double distancia, double temperatura, qint64 timestamp){
+void MainWindow::setData(qint64 timestamp) {
     qint64 currentTime = timestamp - startTime;
-
-    if(aux == 0){//Se musetran ambas
+    if(controlCheckBox == 1 || controlCheckBox == 3){
         // Agregar datos de distancia
-        dataPointsDist.append(QPointF(currentTime, distancia));
+        dataPointsDist.append(QPointF(currentTime, disRespuesta));
         while(!dataPointsDist.isEmpty() && currentTime - dataPointsDist.first().x() > 60) {
             dataPointsDist.removeFirst();
         }
-
-        // Agregar datos de temperatura
-        dataPointsTemp.append(QPointF(currentTime, temperatura));
-        while(!dataPointsTemp.isEmpty() && currentTime - dataPointsTemp.first().x() > 60) {
-            dataPointsTemp.removeFirst();
-        }
-
-        // Actualizar series
-        seriesDist->replace(dataPointsDist);
-        seriesTemp->replace(dataPointsTemp);
-    }else if(aux == 1){//solo distancia
-        // Agregar datos de distancia
-        dataPointsDist.append(QPointF(currentTime, distancia));
-        while(!dataPointsDist.isEmpty() && currentTime - dataPointsDist.first().x() > 60) {
-            dataPointsDist.removeFirst();
-        }
-        // Actualizar series
-        seriesDist->replace(dataPointsDist);
-    }else if(aux == 2){//solo temperatura
-        // Agregar datos de temperatura
-        dataPointsTemp.append(QPointF(currentTime, temperatura));
-        while(!dataPointsTemp.isEmpty() && currentTime - dataPointsTemp.first().x() > 60) {
-            dataPointsTemp.removeFirst();
-        }
-        // Actualizar series
-        seriesTemp->replace(dataPointsTemp);
     }
-
+    if(controlCheckBox == 2 || controlCheckBox == 3){
+        // Agregar datos de temperatura
+        dataPointsTemp.append(QPointF(currentTime, temRespuesta));
+        while(!dataPointsTemp.isEmpty() && currentTime - dataPointsTemp.first().x() > 60) {
+            dataPointsTemp.removeFirst();
+        }
+    }
+    // Actualizar series
+    seriesDist->replace(dataPointsDist);
+    seriesTemp->replace(dataPointsTemp);
     // Actualizar ejes
     axisX->setRange(currentTime - 60, currentTime);
     axisYDist->setRange(0, 150);  // Ajustar según necesidad
@@ -207,7 +197,6 @@ void MainWindow::onConnected() {
 
 void MainWindow::onTextMessageReceived(const QString &message) {
     qint64 currentTime;
-    double disRespuesta, temRespuesta;
     qDebug() << "Mensaje recibido:" << message;
     ui->textEdit->append(message);
     // Procesar el mensaje JSON
@@ -215,24 +204,24 @@ void MainWindow::onTextMessageReceived(const QString &message) {
     if (!doc.isNull() && doc.isObject()) {
         QJsonObject jsonObj = doc.object();
         //En esta parte deben leerse las posibles respuestas JSON del servidor (ESP32)
-        if(jsonObj.contains("type") && (jsonObj["type"] == "medicionDistancia" || jsonObj["type"] == "medicionTemperatura")){
+        if(jsonObj.contains("type") && (jsonObj["type"] == "medicionDistancia" ||
+                                        jsonObj["type"] == "medicionTemperatura" ||
+                                        jsonObj["type"] == "mediciones")){
             if (jsonObj["type"] == "medicionDistancia"){
                 disRespuesta = jsonObj["distancia"].toDouble();
-                ui->textEdit->append(message);
-                ui->lcdNumber->display(disRespuesta);
-            }
-            if(jsonObj["type"] == "medicionTemperatura"){
+                temRespuesta = 0;
+            }else if(jsonObj["type"] == "medicionTemperatura"){
                 temRespuesta = jsonObj["temperatura"].toDouble();
-                ui->textEdit->append(message);
-                ui->lcdNumber_6->display(temRespuesta);
+                disRespuesta = 0;
+            }else if(jsonObj["type"] == "mediciones"){
+                disRespuesta = jsonObj["distancia"].toDouble();
+                temRespuesta = jsonObj["temperatura"].toDouble();
             }
+            ui->textEdit->append(message);
+            ui->lcdNumber->display(disRespuesta);
+            ui->lcdNumber_6->display(temRespuesta);
             currentTime = QDateTime::currentSecsSinceEpoch();
-            if(ui->checkBox->isChecked() && ui->checkBox_2->isCheckable())
-                setData(1, disRespuesta, 0, currentTime);
-            if(ui->checkBox_2->isChecked() && ui->checkBox->isCheckable())
-                setData(2, 0, temRespuesta, currentTime);
-            if(ui->checkBox->isChecked() && ui->checkBox_2->isChecked())
-                setData(0, disRespuesta, temRespuesta, currentTime);
+            setData(currentTime);//Para mostrar los datos en la grafica
         }
     }
 }
@@ -297,6 +286,11 @@ void MainWindow::msgsLM35(){//Utilizada cada que se reguire la temperatura del s
     jsonObj["type"] = "getTemperatura";
     sendJSON(jsonObj);
 }
+void MainWindow::msgsSensores(){
+    QJsonObject jsonObj;
+    jsonObj["type"] = "ambosSensores";
+    sendJSON(jsonObj);
+}
 void MainWindow::on_pushButton_clicked()//adelante
 {
     moveMotor("adelante");
@@ -328,8 +322,7 @@ void MainWindow::setDial(int angulo){//utilizada cada que se requiere mover el s
 
 void MainWindow::on_pushButton_6_clicked()
 {
-    msgsUltra();
-    msgsLM35();
+    msgsSensores();
 }
 void MainWindow::on_dial_sliderMoved(int position)
 {
@@ -454,3 +447,15 @@ void MainWindow::on_pushButton_10_clicked()
     ui->lcdNumber_5->setStyleSheet(styleLCDnumberTimes);
 }
 
+qint8 MainWindow::getDecimal(bool a, bool b){
+    if(!a && !b)//no es muy elegante pero ps son 2 bits
+        return 0;
+    else if(!a && b)//activa ultrasonico
+        return 1;
+    else if(a && !b)//activa lm35
+        return 2;
+    else if(a && b)//actiba los dos
+        return 3;
+    else
+        return 0;//el cero se ignora siempre
+}
