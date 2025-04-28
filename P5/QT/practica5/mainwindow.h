@@ -15,6 +15,10 @@
 #include <QTimer>
 #include <QKeyEvent>
 #include <QtCharts/QDateTimeAxis>
+//Bibliotecas para la p5
+#include <QSqlDatabase>
+#include <QSqlQuery>
+#include <QSqlError>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -284,8 +288,13 @@ private slots:
     void msgsLM35();
     qint8 getDecimal(bool a, bool b);
     void msgsSensores();
+    void on_pushButton_11_clicked();
+
+    void setData_phpmyadmin(QString type, double temperatura, double distancia, qint64 timestamp);
 private:
     Ui::MainWindow *ui;
+    QSqlDatabase db = QSqlDatabase::addDatabase("QMYSQL");
+
     QWebSocket *m_webSocket;   // Puntero al WebSocket
     bool m_connected;
 
@@ -302,5 +311,6 @@ private:
 
     qint8 controlCheckBox;//Tengo 2 chekBox por lo que hay 4 combinaciones posibles, esta varible almacena del 0 al 3 ese estado, se usa en el loop
     double disRespuesta, temRespuesta;//guardan las mediciones de los sensores
+    bool btnMediciones; //ayuda en el control de los lcdNumber relacionados al pushButton_6
 };
 #endif // MAINWINDOW_H

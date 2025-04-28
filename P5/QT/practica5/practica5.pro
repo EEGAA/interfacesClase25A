@@ -1,4 +1,4 @@
-QT       += core gui network websockets charts widgets
+QT       += core gui network websockets charts widgets sql
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 

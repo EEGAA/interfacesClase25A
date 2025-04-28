@@ -40,6 +40,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->textEdit->setStyleSheet(styleTextEdit);
     ui->checkBox_2->setStyleSheet(checkboxLM35Style);
     ui->label->setStyleSheet(styleLabelTime);
+    ui->pushButton_11->setStyleSheet(setReconectButton);
     m_webSocket = new QWebSocket();
     m_connected = false;
     // Conectar WebSocket
@@ -67,8 +68,8 @@ MainWindow::MainWindow(QWidget *parent)
     seriesTemp = new QLineSeries();
     seriesTemp->setName("Temperatura [°C]");
 
-    chart->addSeries(seriesDist);
     chart->addSeries(seriesTemp);
+    chart->addSeries(seriesDist);
 
     // Eje X común
     axisX = new QValueAxis();
@@ -82,19 +83,34 @@ MainWindow::MainWindow(QWidget *parent)
     axisYDist = new QValueAxis();
     axisYDist->setTitleText("Distancia [cm]");
     axisYDist->setRange(0, 150);
-    chart->addAxis(axisYDist, Qt::AlignLeft);
+    chart->addAxis(axisYDist, Qt::AlignRight);
     seriesDist->attachAxis(axisYDist);
 
     // Eje Y secundario para temperatura
     axisYTemp = new QValueAxis();
     axisYTemp->setTitleText("Temperatura [°C]");
     axisYTemp->setRange(-10, 50);  // Rango típico para temperatura
-    chart->addAxis(axisYTemp, Qt::AlignRight);
+    chart->addAxis(axisYTemp, Qt::AlignLeft);
     seriesTemp->attachAxis(axisYTemp);
+
+    seriesDist->setColor(QColor("#8e44ad"));
+    seriesTemp->setColor(QColor("#c0392b"));
 
     ui->widget->setChart(chart);
 
     preSetTimeMotors();
+
+    btnMediciones = false;
+    //necesario para la base de datos, Aqui se modifica la ruta
+    db.setHostName("localhost");       // Cambia a la IP de tu servidor MySQL si no es local
+    db.setDatabaseName("practica5_DI25A");   // Reemplaza con el nombre de tu base de datos
+    db.setUserName("admin");         // Reemplaza con tu usuario de MySQL
+    db.setPassword("Mendelson1234");      // Reemplaza con tu contraseña de MySQL
+    if (!db.open()) {
+        qDebug() << "Error al conectar con la base de datos:" << db.lastError().text();
+    } else {
+        qDebug() << "Conexión exitosa con la base de datos";
+    }
 }
 
 MainWindow::~MainWindow()
@@ -147,7 +163,16 @@ void MainWindow::loop(){
         break;
     case 3:
         msgsSensores();
+        break;
+    case 0:
+        if(!btnMediciones){
+            ui->lcdNumber->display(0);
+            ui->lcdNumber_6->display(0);
+        }
+        break;
     }
+    if(controlCheckBox != 0)
+        btnMediciones = false;
 }
 
 void MainWindow::setData(qint64 timestamp) {
@@ -204,24 +229,28 @@ void MainWindow::onTextMessageReceived(const QString &message) {
     if (!doc.isNull() && doc.isObject()) {
         QJsonObject jsonObj = doc.object();
         //En esta parte deben leerse las posibles respuestas JSON del servidor (ESP32)
-        if(jsonObj.contains("type") && (jsonObj["type"] == "medicionDistancia" ||
-                                        jsonObj["type"] == "medicionTemperatura" ||
-                                        jsonObj["type"] == "mediciones")){
-            if (jsonObj["type"] == "medicionDistancia"){
-                disRespuesta = jsonObj["distancia"].toDouble();
-                temRespuesta = 0;
-            }else if(jsonObj["type"] == "medicionTemperatura"){
-                temRespuesta = jsonObj["temperatura"].toDouble();
-                disRespuesta = 0;
-            }else if(jsonObj["type"] == "mediciones"){
-                disRespuesta = jsonObj["distancia"].toDouble();
-                temRespuesta = jsonObj["temperatura"].toDouble();
-            }
-            ui->textEdit->append(message);
-            ui->lcdNumber->display(disRespuesta);
-            ui->lcdNumber_6->display(temRespuesta);
-            currentTime = QDateTime::currentSecsSinceEpoch();
-            setData(currentTime);//Para mostrar los datos en la grafica
+        if(jsonObj.contains("type")){
+            QString myType = jsonObj["type"].toString();
+            if(myType == "medicionDistancia" ||
+               myType == "medicionTemperatura" ||
+                myType == "mediciones"){
+                if (myType == "medicionDistancia"){
+                    disRespuesta = jsonObj["distancia"].toDouble();
+                    temRespuesta = 0;
+                }else if(myType == "medicionTemperatura"){
+                    temRespuesta = jsonObj["temperatura"].toDouble();
+                    disRespuesta = 0;
+                }else if(myType == "mediciones"){
+                    disRespuesta = jsonObj["distancia"].toDouble();
+                    temRespuesta = jsonObj["temperatura"].toDouble();
+                }
+                ui->textEdit->append(message);
+                ui->lcdNumber->display(disRespuesta);
+                ui->lcdNumber_6->display(temRespuesta);
+                currentTime = QDateTime::currentSecsSinceEpoch();
+                setData(currentTime);//Para mostrar los datos en la grafica
+                setData_phpmyadmin(myType, temRespuesta, disRespuesta, currentTime);//para insertar en la base de datos
+            }//si la respuesta type tubiera mas opciones, aqui se seguiria usando else if, similar al codigo de la ESP
         }
     }
 }
@@ -323,6 +352,7 @@ void MainWindow::setDial(int angulo){//utilizada cada que se requiere mover el s
 void MainWindow::on_pushButton_6_clicked()
 {
     msgsSensores();
+    btnMediciones = true;
 }
 void MainWindow::on_dial_sliderMoved(int position)
 {
@@ -458,4 +488,26 @@ qint8 MainWindow::getDecimal(bool a, bool b){
         return 3;
     else
         return 0;//el cero se ignora siempre
+}
+
+void MainWindow::on_pushButton_11_clicked()
+{
+    QJsonObject jsonObj;
+    jsonObj["type"] = "restartESP";
+    sendJSON(jsonObj);
+}
+
+void MainWindow::setData_phpmyadmin(QString type, double temperatura, double distancia, qint64 timestamp){
+    const QString deviceID = "ESP32_S3";
+    QSqlQuery query(db);
+    query.prepare("INSERT INTO ejemplo1 (deviceID, timestamp, type, temperatura, distancia) "
+                  "VALUES (:deviceID, :timestamp, :type, :temperatura, :distancia)");
+    query.bindValue(":deviceID", deviceID);
+    query.bindValue(":timestamp", timestamp);
+    query.bindValue(":type", type);
+    query.bindValue(":temperatura", temperatura);
+    query.bindValue(":distancia", distancia);
+    if(!query.exec())
+        qDebug() << "Error al insertar datos:" << query.lastError().text();
+
 }
