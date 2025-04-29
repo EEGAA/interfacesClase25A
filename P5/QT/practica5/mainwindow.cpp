@@ -1,6 +1,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-QString myIP = "192.168.100.170";
+QString myIP = "192.168.85.168";
 QString IPws = "ws://" + myIP + "/ws";
 
 MainWindow::MainWindow(QWidget *parent)
